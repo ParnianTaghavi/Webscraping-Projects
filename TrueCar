@@ -1,0 +1,31 @@
+from bs4 import BeautifulSoup
+import requests
+import cx_Oracle
+
+conn = cx_Oracle.connect('sys/Daneshkar/db19c', mode=cx_Oracle.SYSDBA)
+cur = conn.cursor()
+cur.execute('''create table Car_Infos (prices float, works float)''')
+
+page = requests.get("https://www.truecar.com/used-cars-for-sale/listings/")
+soup = BeautifulSoup(page.text, 'html.parser')
+car_name = input("Enter the name of the desired car : ")
+prices = soup.find_all('span', attrs={"data-test": "vehicleListingPriceAmount"})
+works = soup.find_all('div', attrs={"class": "truncate text-xs"})
+names = soup.find_all('span', attrs={"class":"truncate"})
+i = 0
+j = 0
+for name in names:
+    while i != 20:
+        if name == car_name:
+            print(prices[j], works[j])
+            sql1 = '''insert into cars (prices) values (:price)'''
+            cur.execute(sql1, price=prices[j])
+            sql2 = '''insert into cars (works) values (:work)'''
+            cur.execute(sql2, work=works[j])
+            i += 1
+    j += 1
+
+rows = cur.fetchall()
+
+cur.close()
+conn.close()
